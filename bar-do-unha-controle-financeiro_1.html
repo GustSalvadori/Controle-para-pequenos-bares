@@ -1,0 +1,1555 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Bar do Unha — Controle Financeiro</title>
+
+<!-- Lets the page be added to the home screen on iOS/Android and open
+     full-screen, themed, like a small app instead of a browser tab -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bar do Unha">
+<meta name="theme-color" content="#1B1712">
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+html, body { margin: 0; padding: 0; background: #1B1712; }
+
+.mfs-app {
+  --mfs-bg: #1B1712;
+  --mfs-surface: #241E17;
+  --mfs-surface-2: #2E2619;
+  --mfs-paper: #F1E8D6;
+  --mfs-paper-line: #C9B98F;
+  --mfs-ink: #241C12;
+  --mfs-text: #EDE3D0;
+  --mfs-text-dim: #A99C86;
+  --mfs-brass: #C6903E;
+  --mfs-brass-bright: #E3AE5C;
+  --mfs-green: #6FA06A;
+  --mfs-red: #C9695A;
+  --mfs-border: #3A3024;
+
+  background: radial-gradient(ellipse at top, #221C15 0%, var(--mfs-bg) 55%);
+  color: var(--mfs-text);
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  padding: 28px clamp(16px, 4vw, 48px) 60px;
+  box-sizing: border-box;
+}
+.mfs-app * { box-sizing: border-box; }
+
+.mfs-loading {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  color: var(--mfs-text-dim); font-family: 'IBM Plex Mono', monospace; font-size: 14px;
+}
+.mfs-spin { animation: mfs-spin 1s linear infinite; }
+@keyframes mfs-spin { to { transform: rotate(360deg); } }
+
+.mfs-header {
+  display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;
+  padding-bottom: 20px; margin-bottom: 18px; border-bottom: 1px solid var(--mfs-border);
+}
+.mfs-eyebrow {
+  margin: 0 0 4px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--mfs-brass-bright);
+}
+.mfs-title {
+  margin: 0; font-family: 'Fraunces', serif; font-weight: 600; font-size: clamp(24px, 3.4vw, 34px);
+  letter-spacing: -0.01em; color: var(--mfs-text);
+}
+.mfs-header-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; row-gap: 10px; }
+.mfs-save-indicator {
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--mfs-text-dim);
+  min-width: 54px; text-align: right; opacity: 0; transition: opacity 0.2s;
+}
+.mfs-save-indicator.saving, .mfs-save-indicator.saved { opacity: 1; }
+
+.mfs-month-nav {
+  display: flex; align-items: center; gap: 2px; background: var(--mfs-surface);
+  border: 1px solid var(--mfs-border); border-radius: 8px; padding: 3px;
+}
+.mfs-month-input {
+  background: transparent; border: none; color: var(--mfs-text); font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px; padding: 5px 4px; outline: none;
+}
+.mfs-month-input::-webkit-calendar-picker-indicator { filter: invert(0.8); cursor: pointer; }
+
+.mfs-icon-btn {
+  display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px;
+  border-radius: 7px; border: 1px solid var(--mfs-border); background: var(--mfs-surface);
+  color: var(--mfs-text-dim); cursor: pointer; transition: all 0.15s; font-size: 15px;
+}
+.mfs-icon-btn:hover { color: var(--mfs-text); border-color: var(--mfs-brass); }
+.mfs-icon-btn.danger:hover { color: var(--mfs-red); border-color: var(--mfs-red); }
+
+.mfs-tabs {
+  display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 22px;
+}
+.mfs-tab {
+  display: flex; align-items: center; gap: 7px; white-space: nowrap; padding: 9px 15px;
+  border-radius: 999px; border: 1px solid var(--mfs-border); background: var(--mfs-surface);
+  color: var(--mfs-text-dim); font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+}
+.mfs-tab:hover { color: var(--mfs-text); }
+.mfs-tab.active { background: var(--mfs-brass); border-color: var(--mfs-brass); color: #1B1712; font-weight: 600; }
+
+.mfs-main { max-width: 1200px; margin: 0 auto; }
+.mfs-view { display: flex; flex-direction: column; gap: 18px; }
+
+.mfs-dash-grid { display: grid; grid-template-columns: minmax(280px, 380px) 1fr; gap: 18px; align-items: start; }
+.mfs-dash-side { display: flex; flex-direction: column; gap: 18px; }
+@media (max-width: 860px) { .mfs-dash-grid { grid-template-columns: 1fr; } }
+
+/* Receipt / signature element */
+.mfs-receipt {
+  position: relative;
+  background: var(--mfs-paper);
+  color: var(--mfs-ink);
+  border-radius: 4px 4px 0 0;
+  padding: 26px 24px 34px;
+  box-shadow: 0 18px 40px -14px rgba(0,0,0,0.55);
+  clip-path: polygon(
+    0% 0%, 100% 0%, 100% 97%,
+    92% 100%, 84% 97%, 76% 100%, 68% 97%, 60% 100%, 52% 97%, 44% 100%,
+    36% 97%, 28% 100%, 20% 97%, 12% 100%, 4% 97%, 0% 100%
+  );
+  overflow: hidden;
+}
+.mfs-receipt-eyebrow {
+  margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.16em;
+  color: #6B5E44;
+}
+.mfs-receipt-month {
+  margin: 2px 0 18px; font-family: 'Fraunces', serif; font-weight: 600; font-size: 21px;
+  text-transform: capitalize; color: var(--mfs-ink);
+}
+.mfs-receipt-row { display: flex; align-items: baseline; gap: 6px; margin-bottom: 9px; }
+.mfs-receipt-row .label { font-size: 13px; color: #4A4028; white-space: nowrap; }
+.mfs-receipt-row .fill { flex: 1; border-bottom: 1px dotted var(--mfs-paper-line); margin-bottom: 3px; }
+.mfs-receipt-row .value { font-family: 'IBM Plex Mono', monospace; font-size: 13px; white-space: nowrap; color: var(--mfs-ink); }
+.mfs-receipt-divider { border-top: 1px dashed var(--mfs-paper-line); margin: 14px 0 12px; }
+.mfs-receipt-total .label { font-family: 'Fraunces', serif; font-weight: 700; font-size: 16px; color: var(--mfs-ink); }
+.mfs-receipt-total .value { font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 18px; }
+.mfs-receipt.is-lucro .mfs-receipt-total .value { color: #3E6B3F; }
+.mfs-receipt.is-prejuizo .mfs-receipt-total .value { color: #A5453A; }
+
+.mfs-stamp {
+  position: absolute; top: 20px; right: -6px; transform: rotate(-11deg);
+  font-family: 'Fraunces', serif; font-weight: 700; font-size: 13px; letter-spacing: 0.1em;
+  padding: 5px 14px; border: 2.5px double currentColor; border-radius: 4px; opacity: 0.75;
+  mix-blend-mode: multiply;
+}
+.mfs-receipt.is-lucro .mfs-stamp { color: #2E5C31; }
+.mfs-receipt.is-prejuizo .mfs-stamp { color: #A5453A; }
+
+/* Generic panel */
+.mfs-panel {
+  background: var(--mfs-surface); border: 1px solid var(--mfs-border); border-radius: 12px; padding: 20px;
+}
+.mfs-panel h3 { margin: 0; font-family: 'Fraunces', serif; font-weight: 600; font-size: 16px; color: var(--mfs-text); }
+.mfs-panel-hint { margin: 4px 0 0; font-size: 12.5px; color: var(--mfs-text-dim); max-width: 46ch; }
+.mfs-panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+.mfs-panel-total { font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 600; color: var(--mfs-brass-bright); white-space: nowrap; }
+.accent-green { color: var(--mfs-green) !important; }
+.accent-red { color: var(--mfs-red) !important; }
+
+/* Editable list rows */
+.mfs-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.mfs-list-row { display: flex; align-items: center; gap: 8px; }
+.mfs-input {
+  background: var(--mfs-surface-2); border: 1px solid var(--mfs-border); border-radius: 7px;
+  color: var(--mfs-text); font-family: 'Inter', sans-serif; font-size: 13.5px; padding: 9px 11px;
+  outline: none; transition: border-color 0.15s; width: 100%;
+}
+.mfs-input:focus { border-color: var(--mfs-brass); }
+.mfs-input-name { flex: 1; }
+.mfs-input-grow { flex: 1.6; }
+.mfs-amount-wrap {
+  display: flex; align-items: center; gap: 6px; background: var(--mfs-surface-2);
+  border: 1px solid var(--mfs-border); border-radius: 7px; padding: 0 10px; flex-shrink: 0; width: 150px;
+}
+.mfs-amount-wrap span { color: var(--mfs-text-dim); font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; }
+.mfs-input-amount {
+  background: transparent; border: none; padding: 9px 0; font-family: 'IBM Plex Mono', monospace; width: 100%;
+}
+.mfs-empty-hint { color: var(--mfs-text-dim); font-size: 13px; font-style: italic; margin: 6px 0; }
+
+.mfs-btn-ghost {
+  display: inline-flex; align-items: center; gap: 6px; background: transparent; border: 1px dashed var(--mfs-border);
+  color: var(--mfs-brass-bright); font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500;
+  border-radius: 8px; padding: 8px 13px; cursor: pointer; transition: all 0.15s;
+}
+.mfs-btn-ghost:hover { border-color: var(--mfs-brass); background: rgba(198,144,62,0.08); }
+.mfs-btn-primary {
+  display: inline-flex; align-items: center; gap: 6px; background: var(--mfs-brass); border: none;
+  color: #1B1712; font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 600;
+  border-radius: 8px; padding: 0 16px; cursor: pointer; transition: background 0.15s; flex-shrink: 0;
+}
+.mfs-btn-primary:hover { background: var(--mfs-brass-bright); }
+
+/* Forms */
+.mfs-preview-total { margin: 10px 2px 0; font-size: 12.5px; color: var(--mfs-text-dim); }
+.mfs-preview-total strong { color: var(--mfs-brass-bright); font-family: 'IBM Plex Mono', monospace; }
+
+.mfs-sale-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.mfs-field { display: flex; flex-direction: column; gap: 5px; }
+.mfs-field label {
+  font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--mfs-text-dim);
+}
+.mfs-field .mfs-input, .mfs-field .mfs-amount-wrap { width: auto; min-width: 130px; }
+.mfs-field-date .mfs-input, .mfs-field-time .mfs-input { min-width: 118px; }
+.mfs-field-qty .mfs-input { min-width: 70px; width: 70px; }
+.mfs-field-grow { flex: 1 1 220px; }
+.mfs-field-grow .mfs-input { width: 100%; }
+.mfs-field-amount .mfs-amount-wrap { width: 140px; }
+.mfs-field-submit { height: 38px; margin-top: 20px; }
+.mfs-input-error { border-color: var(--mfs-red) !important; }
+.mfs-form-error {
+  display: flex; align-items: center; gap: 6px; margin: 12px 2px 0; font-size: 12.5px; color: var(--mfs-red);
+}
+.mfs-form-success {
+  display: flex; align-items: center; gap: 6px; margin: 12px 2px 0; font-size: 12.5px; color: var(--mfs-green);
+}
+
+/* Tables */
+.mfs-table { display: flex; flex-direction: column; gap: 2px; }
+.mfs-table-head, .mfs-table-row {
+  display: grid; grid-template-columns: 90px 1fr 110px 24px; gap: 10px; align-items: center; padding: 9px 4px;
+}
+.mfs-table-purchases .mfs-table-head, .mfs-table-purchases .mfs-table-row {
+  grid-template-columns: 84px 1.4fr 60px 90px 90px 1fr 24px;
+}
+.mfs-table-head { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--mfs-text-dim); border-bottom: 1px solid var(--mfs-border); }
+.mfs-table-row { border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 13.5px; }
+.mfs-table-row:hover { background: rgba(255,255,255,0.02); }
+.mfs-col-right { text-align: right; }
+.mfs-mono { font-family: 'IBM Plex Mono', monospace; }
+.mfs-dim { color: var(--mfs-text-dim); font-size: 12.5px; }
+
+/* Category chips */
+.mfs-chip-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.mfs-chip {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px; flex-shrink: 0;
+  background: var(--mfs-surface); border: 1px solid var(--mfs-border); border-radius: 10px;
+  padding: 8px 14px; cursor: pointer; color: var(--mfs-text-dim); font-size: 12.5px; font-weight: 500;
+  transition: all 0.15s;
+}
+.mfs-chip:hover { color: var(--mfs-text); }
+.mfs-chip.active { border-color: var(--mfs-brass); background: rgba(198,144,62,0.1); color: var(--mfs-text); }
+.mfs-chip-total { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--mfs-brass-bright); }
+.mfs-chip-add { flex-direction: row; align-items: center; gap: 4px; }
+.mfs-chip-new { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.mfs-input-chip { width: 140px; padding: 8px 10px; }
+
+/* Buckets */
+.mfs-buckets { display: flex; flex-direction: column; gap: 12px; margin-top: 4px; }
+.mfs-bucket-label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
+.mfs-bucket-track { height: 7px; border-radius: 999px; background: var(--mfs-surface-2); overflow: hidden; }
+.mfs-bucket-fill { height: 100%; background: linear-gradient(90deg, var(--mfs-brass), var(--mfs-brass-bright)); border-radius: 999px; }
+
+/* Feed */
+.mfs-feed { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; }
+.mfs-feed-row { display: grid; grid-template-columns: 16px 70px 1fr 110px; gap: 10px; align-items: center;
+  padding: 9px 4px; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 13.5px; }
+.mfs-feed-label { color: var(--mfs-text); }
+
+/* Sales table (adds an Hora column) */
+.mfs-table-sales .mfs-table-head, .mfs-table-sales .mfs-table-row {
+  grid-template-columns: 84px 60px 1fr 110px 24px;
+}
+
+/* Live "vendas de hoje" indicator */
+.mfs-live-dot {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--mfs-green);
+  box-shadow: 0 0 0 0 rgba(111,160,106,0.6); animation: mfs-pulse 2s infinite; flex-shrink: 0;
+}
+@keyframes mfs-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(111,160,106,0.55); }
+  70% { box-shadow: 0 0 0 7px rgba(111,160,106,0); }
+  100% { box-shadow: 0 0 0 0 rgba(111,160,106,0); }
+}
+.mfs-today-pill {
+  display: flex; align-items: center; gap: 8px; background: var(--mfs-surface);
+  border: 1px solid var(--mfs-border); border-radius: 999px; padding: 7px 14px 7px 12px;
+}
+.mfs-today-label { font-size: 12px; color: var(--mfs-text-dim); }
+.mfs-today-value { font-size: 13px; font-weight: 600; color: var(--mfs-green); }
+.mfs-panel h3 .mfs-live-dot { margin-right: 6px; vertical-align: middle; }
+.mfs-today-card .mfs-panel-head { margin-bottom: 6px; }
+.mfs-today-meta { margin: 0 0 4px; font-size: 12.5px; color: var(--mfs-text-dim); }
+.mfs-today-list { display: flex; flex-direction: column; gap: 2px; margin-top: 10px; }
+.mfs-today-row {
+  display: grid; grid-template-columns: 56px 1fr 110px; gap: 10px; align-items: center;
+  padding: 7px 4px; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 13px;
+}
+.mfs-btn-print { flex-shrink: 0; }
+
+/* ---------------------------------------------------------------------- */
+/* Printable management report ("Exportar PDF" -> browser print dialog)   */
+/* ---------------------------------------------------------------------- */
+.mfs-print-only { display: none; }
+
+@media print {
+  body { background: #fff !important; }
+  .mfs-app { background: #fff !important; color: #111 !important; padding: 0 !important; min-height: 0 !important; }
+  .mfs-app > *:not(.mfs-print-only) { display: none !important; }
+  .mfs-print-only {
+    display: block !important; padding: 12mm; font-family: 'Inter', sans-serif; color: #141210;
+  }
+  .mfs-print-header { margin-bottom: 16px; border-bottom: 2px solid #141210; padding-bottom: 10px; }
+  .mfs-print-header h1 { font-family: 'Fraunces', serif; font-size: 21px; margin: 0 0 3px; }
+  .mfs-print-header p { margin: 0; font-size: 12.5px; color: #444; }
+  .mfs-print-meta { margin-top: 2px !important; color: #888 !important; font-size: 10.5px !important;
+    font-family: 'IBM Plex Mono', monospace; }
+  .mfs-print-only h2 {
+    font-family: 'Fraunces', serif; font-weight: 600; font-size: 14px; margin: 20px 0 8px;
+    border-bottom: 1px solid #ccc; padding-bottom: 4px; break-after: avoid;
+  }
+  .mfs-print-empty { font-size: 12px; color: #777; font-style: italic; margin: 0 0 10px; }
+  table.mfs-print-summary, table.mfs-print-table {
+    width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 6px; break-inside: avoid;
+  }
+  table.mfs-print-summary th, table.mfs-print-summary td,
+  table.mfs-print-table th, table.mfs-print-table td {
+    border: 1px solid #ddd; padding: 5px 8px; text-align: left;
+  }
+  table.mfs-print-table th {
+    background: #f2f0ea; font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; font-size: 9.5px;
+    letter-spacing: 0.04em;
+  }
+  table.mfs-print-summary th { width: 60%; font-weight: 600; }
+  table.mfs-print-summary td,
+  table.mfs-print-table td:last-child { text-align: right; font-family: 'IBM Plex Mono', monospace; }
+  .mfs-print-total-row th, .mfs-print-total-row td { border-top: 2px solid #141210; font-weight: 700; font-size: 13px; }
+  @page { margin: 14mm; }
+}
+
+/* ---------------------------------------------------------------------- */
+/* Mobile & tablet                                                         */
+/* ---------------------------------------------------------------------- */
+
+/* iOS Safari auto-zooms on focus if a field's font-size is under 16px */
+@media (max-width: 900px) {
+  .mfs-input, .mfs-month-input { font-size: 16px; }
+}
+
+@media (max-width: 760px) {
+  .mfs-app { padding: 18px 14px 48px; }
+  .mfs-header { align-items: flex-start; gap: 12px; }
+  .mfs-header-controls { width: 100%; justify-content: space-between; }
+  .mfs-title { font-size: 22px; }
+
+  /* Bigger, easier-to-tap buttons and tabs */
+  .mfs-icon-btn { width: 38px; height: 38px; }
+  .mfs-tab { padding: 10px 14px; font-size: 13px; }
+  .mfs-chip { padding: 9px 14px; }
+  .mfs-btn-print { padding: 0 14px; height: 38px; }
+
+  /* "Registrar venda" / "Nova compra": one full-width field per row */
+  .mfs-sale-form { flex-direction: column; align-items: stretch; }
+  .mfs-sale-form .mfs-field { width: 100%; }
+  .mfs-sale-form .mfs-input,
+  .mfs-sale-form .mfs-amount-wrap { width: 100% !important; min-width: 0; }
+  .mfs-field-submit { width: 100%; height: 44px; margin-top: 6px; }
+
+  /* Tables scroll horizontally inside their own box, not the whole page */
+  .mfs-table { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .mfs-table-head, .mfs-table-row { min-width: 380px; }
+  .mfs-table-sales .mfs-table-head, .mfs-table-sales .mfs-table-row { min-width: 460px; }
+  .mfs-table-purchases .mfs-table-head, .mfs-table-purchases .mfs-table-row { min-width: 640px; }
+  .mfs-feed { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .mfs-feed-row { min-width: 340px; }
+
+  .mfs-receipt { padding: 22px 18px 30px; }
+  .mfs-stamp { top: 14px; font-size: 11px; padding: 4px 10px; }
+  .mfs-today-list, .mfs-today-row { min-width: 0; }
+}
+
+@media (max-width: 420px) {
+  .mfs-today-pill { padding: 6px 10px; }
+  .mfs-today-value { font-size: 12px; }
+  .mfs-month-input { font-size: 15px; padding: 5px 2px; }
+}
+
+/* Comfortable tap targets on touch devices, even on larger tablet screens */
+@media (hover: none) and (pointer: coarse) {
+  .mfs-icon-btn { width: 38px; height: 38px; }
+  .mfs-chip, .mfs-tab { padding-top: 10px; padding-bottom: 10px; }
+}
+</style>
+</head>
+<body>
+<div id="root">
+  <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;
+    color:#A99C86;font-family:sans-serif;font-size:14px;">
+    Carregando…
+  </div>
+</div>
+
+<!-- React + ReactDOM -->
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<!-- Recharts (used for the sales-vs-costs trend chart) -->
+<script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
+<script src="https://unpkg.com/recharts@2/umd/Recharts.js"></script>
+<!-- Babel standalone: transforms the JSX below directly in the browser -->
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo, useRef } = React;
+const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = Recharts;
+
+/* ---------------------------------------------------------------------- */
+/* localStorage-backed polyfill for the Claude-artifact `window.storage`   */
+/* API, so the app persists data the same way when run as a plain page.    */
+/* ---------------------------------------------------------------------- */
+window.storage = {
+  get: async (key) => {
+    const raw = localStorage.getItem(key);
+    if (raw === null) throw new Error('key not found: ' + key);
+    return { key, value: raw, shared: false };
+  },
+  set: async (key, value) => {
+    localStorage.setItem(key, value);
+    return { key, value, shared: false };
+  },
+  delete: async (key) => {
+    localStorage.removeItem(key);
+    return { key, deleted: true, shared: false };
+  },
+  list: async (prefix) => {
+    const keys = Object.keys(localStorage).filter((k) => !prefix || k.startsWith(prefix));
+    return { keys, prefix, shared: false };
+  },
+};
+
+/* ---------------------------------------------------------------------- */
+/* Minimal inline icon set (zero npm dependencies — just CDN scripts).     */
+/* ---------------------------------------------------------------------- */
+function Icon({ children, size = 16, className = '', ...rest }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...rest}>
+      {children}
+    </svg>
+  );
+}
+const LayoutDashboard = (p) => <Icon {...p}><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></Icon>;
+const Receipt = (p) => <Icon {...p}><path d="M5 2h14v19l-2.5-1.7L14 21l-2.5-1.7L9 21l-2.5-1.7L5 21V2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="13" y2="15"/></Icon>;
+const Wallet = (p) => <Icon {...p}><path d="M20 7H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h15v-6"/><path d="M20 7V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v3"/><circle cx="17" cy="14" r="1.2" fill="currentColor" stroke="none"/></Icon>;
+const ShoppingBasket = (p) => <Icon {...p}><path d="M4.5 10h15l-1.4 8.4A2 2 0 0 1 16.13 20H7.87a2 2 0 0 1-1.97-1.6L4.5 10z"/><path d="M8 10 12 3l4 7"/><line x1="10" y1="14" x2="10" y2="17"/><line x1="14" y1="14" x2="14" y2="17"/></Icon>;
+const Building2 = (p) => <Icon {...p}><rect x="4" y="2" width="9" height="20"/><rect x="13" y="9" width="7" height="13"/><line x1="7" y1="6" x2="7" y2="6"/><line x1="10" y1="6" x2="10" y2="6"/><line x1="7" y1="10" x2="7" y2="10"/><line x1="10" y1="10" x2="10" y2="10"/><line x1="7" y1="14" x2="7" y2="14"/><line x1="10" y1="14" x2="10" y2="14"/><line x1="16" y1="13" x2="16" y2="13"/><line x1="16" y1="17" x2="16" y2="17"/></Icon>;
+const Plus = (p) => <Icon {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></Icon>;
+const Trash2 = (p) => <Icon {...p}><path d="M4 7h16"/><path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></Icon>;
+const TrendingUp = (p) => <Icon {...p}><polyline points="3 17 9 11 13 15 21 6"/><polyline points="14 6 21 6 21 13"/></Icon>;
+const TrendingDown = (p) => <Icon {...p}><polyline points="3 7 9 13 13 9 21 18"/><polyline points="14 18 21 18 21 11"/></Icon>;
+const RotateCcw = (p) => <Icon {...p}><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><polyline points="3 3 3 8 8 8"/></Icon>;
+const Loader2 = (p) => <Icon {...p}><path d="M12 3a9 9 0 1 1-6.4 2.6"/></Icon>;
+const Check = (p) => <Icon {...p}><polyline points="4 12 9 17 20 6"/></Icon>;
+const Printer = (p) => <Icon {...p}><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="8" rx="1"/><path d="M6 17v4h12v-4"/></Icon>;
+
+/* ---------------------------------------------------------------------- */
+/* Helpers                                                                 */
+/* ---------------------------------------------------------------------- */
+
+const genId = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+const pad2 = (n) => String(n).padStart(2, '0');
+const todayStr = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+};
+const currentMonthKey = () => todayStr().slice(0, 7);
+const monthKeyOf = (dateStr) => (dateStr ? dateStr.slice(0, 7) : '');
+const nowTimeStr = () => {
+  const d = new Date();
+  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+};
+/** Accepts "12,50", "1.234,50" or "12.50" and returns a number (or NaN). */
+function parseAmount(raw) {
+  if (raw === null || raw === undefined) return NaN;
+  let s = String(raw).trim();
+  if (!s) return NaN;
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  return parseFloat(s);
+}
+
+const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+const formatBRL = (n) => brl.format(Number(n) || 0);
+
+const MONTH_ABBR = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const MONTH_FULL = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+
+function monthLabelFull(key) {
+  const [y, m] = key.split('-').map(Number);
+  return `${MONTH_FULL[m - 1]} de ${y}`;
+}
+function monthLabelShort(key) {
+  const [y, m] = key.split('-').map(Number);
+  return `${MONTH_ABBR[m - 1]}/${String(y).slice(2)}`;
+}
+function lastNMonths(monthStr, n = 6) {
+  const [y, m] = monthStr.split('-').map(Number);
+  const arr = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(y, m - 1 - i, 1);
+    arr.push(`${d.getFullYear()}-${pad2(d.getMonth() + 1)}`);
+  }
+  return arr;
+}
+function shiftMonth(monthStr, delta) {
+  const [y, m] = monthStr.split('-').map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
+}
+
+const CATEGORY_HISTORICO = {
+  'Supermercado & Açougue': 1120,
+  'Coca-Cola/Kaiser': 310,
+  'Destilados e Demais Bebidas': 2634,
+  'Doces': 2959,
+  'Material de Limpeza': 2769,
+  'Carvão': 1257,
+  'Gelo': 350,
+  'Gastos Eventuais': 2968,
+};
+
+function buildDefaultData() {
+  const now = new Date();
+  const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const seedDate = `${prevMonth.getFullYear()}-${pad2(prevMonth.getMonth() + 1)}-01`;
+
+  const categories = [
+    'Publicidade', 'Supermercado & Açougue', 'Coca-Cola/Kaiser',
+    'Destilados e Demais Bebidas', 'Doces', 'Material de Limpeza',
+    'Carvão', 'Gelo', 'Gastos Eventuais',
+  ];
+
+  const purchases = Object.entries(CATEGORY_HISTORICO).map(([category, total]) => ({
+    id: genId(),
+    category,
+    product: 'Saldo migrado da planilha (histórico)',
+    quantity: 1,
+    unitPrice: total,
+    total,
+    date: seedDate,
+    supplier: 'Migração inicial',
+  }));
+
+  return {
+    fixedCosts: [
+      { id: genId(), name: 'Aluguel', amount: 2500 },
+      { id: genId(), name: 'Condomínio', amount: 1500 },
+      { id: genId(), name: 'Energia Elétrica - Luz', amount: 700 },
+      { id: genId(), name: 'Internet', amount: 220 },
+      { id: genId(), name: 'Telefone Celular', amount: 360 },
+      { id: genId(), name: 'Escola', amount: 2500 },
+    ],
+    employees: [
+      { id: genId(), name: 'Cleverson', amount: 800 },
+      { id: genId(), name: 'Juliano', amount: 500 },
+      { id: genId(), name: 'Everton', amount: 500 },
+      { id: genId(), name: 'Clayton', amount: 500 },
+      { id: genId(), name: 'Júnior', amount: 500 },
+      { id: genId(), name: 'Geni', amount: 500 },
+      { id: genId(), name: 'Mariele', amount: 600 },
+      { id: genId(), name: 'Ana Paula', amount: 600 },
+    ],
+    structuralCosts: [
+      { id: genId(), name: 'Telefone', amount: 400 },
+      { id: genId(), name: 'Luz', amount: 300 },
+      { id: genId(), name: 'Água', amount: 180 },
+      { id: genId(), name: 'Contador', amount: 200 },
+    ],
+    categories,
+    purchases,
+    sales: [],
+  };
+}
+
+/** Pure calculation shared by the dashboard and the printable PDF report,
+ *  so the numbers can never drift between screen and export. */
+function computeFinancials(data, month) {
+  const fixedTotal = data.fixedCosts.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+  const employeeTotal = data.employees.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+  const structuralTotal = data.structuralCosts.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+
+  const purchasesMonth = data.purchases.filter((p) => monthKeyOf(p.date) === month);
+  const purchasesTotal = purchasesMonth.reduce((s, p) => s + (Number(p.total) || 0), 0);
+
+  const salesMonth = data.sales
+    .filter((s) => monthKeyOf(s.date) === month)
+    .sort((a, b) => ((a.date + (a.time || '')) < (b.date + (b.time || '')) ? 1 : -1));
+  const salesTotal = salesMonth.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+
+  const custosTotal = fixedTotal + employeeTotal + structuralTotal + purchasesTotal;
+  const lucro = salesTotal - custosTotal;
+
+  const catTotals = {};
+  data.categories.forEach((c) => (catTotals[c] = 0));
+  purchasesMonth.forEach((p) => {
+    catTotals[p.category] = (catTotals[p.category] || 0) + (Number(p.total) || 0);
+  });
+
+  return {
+    fixedTotal, employeeTotal, structuralTotal,
+    purchasesMonth, purchasesTotal,
+    salesMonth, salesTotal,
+    custosTotal, lucro, isLucro: lucro >= 0,
+    catTotals,
+  };
+}
+
+/* ---------------------------------------------------------------------- */
+/* Reusable editable list (Gastos Fixos / Funcionários / Estruturais)      */
+/* ---------------------------------------------------------------------- */
+
+function EditableList({ title, hint, items, onChange, addLabel }) {
+  const total = items.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+
+  const updateItem = (id, field, value) => {
+    onChange(items.map((it) => (it.id === id ? { ...it, [field]: value } : it)));
+  };
+  const removeItem = (id) => onChange(items.filter((it) => it.id !== id));
+  const addItem = () => onChange([...items, { id: genId(), name: '', amount: 0 }]);
+
+  return (
+    <div className="mfs-panel">
+      <div className="mfs-panel-head">
+        <div>
+          <h3>{title}</h3>
+          {hint && <p className="mfs-panel-hint">{hint}</p>}
+        </div>
+        <span className="mfs-panel-total">{formatBRL(total)}</span>
+      </div>
+
+      <div className="mfs-list">
+        {items.map((it) => (
+          <div className="mfs-list-row" key={it.id}>
+            <input
+              className="mfs-input mfs-input-name"
+              value={it.name}
+              placeholder="Descrição"
+              onChange={(e) => updateItem(it.id, 'name', e.target.value)}
+            />
+            <div className="mfs-amount-wrap">
+              <span>R$</span>
+              <input
+                className="mfs-input mfs-input-amount"
+                type="number"
+                step="0.01"
+                value={it.amount}
+                onChange={(e) => updateItem(it.id, 'amount', parseFloat(e.target.value) || 0)}
+              />
+            </div>
+            <button className="mfs-icon-btn danger" onClick={() => removeItem(it.id)} aria-label="Remover item">
+              <Trash2 size={15} />
+            </button>
+          </div>
+        ))}
+        {items.length === 0 && <p className="mfs-empty-hint">Nenhum item cadastrado ainda.</p>}
+      </div>
+
+      <button className="mfs-btn-ghost" onClick={addItem}>
+        <Plus size={14} /> {addLabel}
+      </button>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Vendas de hoje — atualiza sozinho em tempo real                         */
+/* ---------------------------------------------------------------------- */
+
+/** Keeps "today" fresh even in a long-running session (e.g. a bar open past midnight). */
+function useTodayDate(refreshMs = 60000) {
+  const [date, setDate] = useState(todayStr());
+  useEffect(() => {
+    const id = setInterval(() => setDate(todayStr()), refreshMs);
+    return () => clearInterval(id);
+  }, [refreshMs]);
+  return date;
+}
+
+function TodaySalesWidget({ sales, variant = 'compact' }) {
+  const todayDate = useTodayDate();
+  const todaySales = useMemo(
+    () =>
+      sales
+        .filter((s) => s.date === todayDate)
+        .sort((a, b) => ((a.time || '') < (b.time || '') ? 1 : -1)),
+    [sales, todayDate]
+  );
+  const total = todaySales.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+
+  if (variant === 'compact') {
+    return (
+      <div className="mfs-today-pill" title="Vendas de hoje, atualizado em tempo real">
+        <span className="mfs-live-dot" />
+        <span className="mfs-today-label">Hoje</span>
+        <span className="mfs-today-value mfs-mono">{formatBRL(total)}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mfs-panel mfs-today-card">
+      <div className="mfs-panel-head">
+        <div>
+          <h3><span className="mfs-live-dot" /> Vendas de hoje</h3>
+          <p className="mfs-panel-hint">{todayDate.split('-').reverse().join('/')} — atualiza sozinho a cada venda lançada</p>
+        </div>
+        <span className="mfs-panel-total accent-green">{formatBRL(total)}</span>
+      </div>
+      <p className="mfs-today-meta">
+        {todaySales.length === 0
+          ? 'Nenhuma venda registrada ainda hoje.'
+          : `${todaySales.length} ${todaySales.length === 1 ? 'venda registrada' : 'vendas registradas'} · ticket médio ${formatBRL(total / todaySales.length)}`}
+      </p>
+      {todaySales.length > 0 && (
+        <div className="mfs-today-list">
+          {todaySales.map((s) => (
+            <div className="mfs-today-row" key={s.id}>
+              <span className="mfs-mono mfs-dim">{s.time || '--:--'}</span>
+              <span>{s.description}</span>
+              <span className="mfs-mono accent-green">{formatBRL(s.amount)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Vendas                                                                  */
+/* ---------------------------------------------------------------------- */
+
+function SalesView({ data, setData, month }) {
+  const [form, setForm] = useState({ date: todayStr(), time: nowTimeStr(), description: '', amount: '' });
+  const [formError, setFormError] = useState('');
+  const [justAdded, setJustAdded] = useState(false);
+  const successTimer = useRef(null);
+  useEffect(() => () => clearTimeout(successTimer.current), []);
+
+  const salesMonth = useMemo(
+    () => data.sales.filter((s) => monthKeyOf(s.date) === month).sort((a, b) => (a.date < b.date ? 1 : -1)),
+    [data.sales, month]
+  );
+  const total = salesMonth.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+
+  const addSale = () => {
+    const date = form.date || todayStr();
+    const amount = parseAmount(form.amount);
+    if (!amount || amount <= 0) {
+      setFormError('Informe um valor de venda maior que zero.');
+      return;
+    }
+    setFormError('');
+    setData((d) => ({
+      ...d,
+      sales: [
+        ...d.sales,
+        { id: genId(), date, time: form.time || nowTimeStr(), description: form.description.trim() || 'Vendas', amount },
+      ],
+    }));
+    setForm({ date, time: nowTimeStr(), description: '', amount: '' });
+    setJustAdded(true);
+    clearTimeout(successTimer.current);
+    successTimer.current = setTimeout(() => setJustAdded(false), 1800);
+  };
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addSale();
+    }
+  };
+  const removeSale = (id) => setData((d) => ({ ...d, sales: d.sales.filter((s) => s.id !== id) }));
+
+  return (
+    <div className="mfs-view">
+      <TodaySalesWidget sales={data.sales} variant="full" />
+
+      <div className="mfs-panel">
+        <div className="mfs-panel-head">
+          <div>
+            <h3>Registrar venda</h3>
+            <p className="mfs-panel-hint">Lance o faturamento do dia — pode ser um total do caixa ou por turno.</p>
+          </div>
+        </div>
+
+        <div className="mfs-sale-form" onKeyDown={handleKeyDown}>
+          <div className="mfs-field mfs-field-date">
+            <label htmlFor="sale-date">Data</label>
+            <input
+              id="sale-date"
+              className="mfs-input"
+              type="date"
+              value={form.date}
+              onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+            />
+          </div>
+          <div className="mfs-field mfs-field-time">
+            <label htmlFor="sale-time">Hora</label>
+            <input
+              id="sale-time"
+              className="mfs-input"
+              type="time"
+              value={form.time}
+              onChange={(e) => setForm((f) => ({ ...f, time: e.target.value }))}
+            />
+          </div>
+          <div className="mfs-field mfs-field-grow">
+            <label htmlFor="sale-desc">Descrição</label>
+            <input
+              id="sale-desc"
+              className="mfs-input"
+              placeholder="Ex: Vendas do sábado, Balcão"
+              value={form.description}
+              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+            />
+          </div>
+          <div className="mfs-field mfs-field-amount">
+            <label htmlFor="sale-amount">Valor</label>
+            <div className={`mfs-amount-wrap ${formError ? 'mfs-input-error' : ''}`}>
+              <span>R$</span>
+              <input
+                id="sale-amount"
+                className="mfs-input mfs-input-amount"
+                type="text"
+                inputMode="decimal"
+                placeholder="0,00"
+                value={form.amount}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setForm((f) => ({ ...f, amount: v }));
+                  if (formError) setFormError('');
+                }}
+              />
+            </div>
+          </div>
+          <button type="button" className="mfs-btn-primary mfs-field-submit" onClick={addSale}>
+            <Plus size={14} /> Lançar
+          </button>
+        </div>
+
+        {formError && <p className="mfs-form-error">{formError}</p>}
+        {justAdded && !formError && (
+          <p className="mfs-form-success">
+            <Check size={13} /> Venda registrada
+          </p>
+        )}
+      </div>
+
+      <div className="mfs-panel">
+        <div className="mfs-panel-head">
+          <h3>Vendas de {monthLabelFull(month)}</h3>
+          <span className="mfs-panel-total accent-green">{formatBRL(total)}</span>
+        </div>
+        {salesMonth.length === 0 ? (
+          <p className="mfs-empty-hint">Nenhuma venda lançada neste mês ainda.</p>
+        ) : (
+          <div className="mfs-table mfs-table-sales">
+            <div className="mfs-table-head">
+              <span>Data</span>
+              <span>Hora</span>
+              <span>Descrição</span>
+              <span className="mfs-col-right">Valor</span>
+              <span />
+            </div>
+            {salesMonth.map((s) => (
+              <div className="mfs-table-row" key={s.id}>
+                <span className="mfs-mono">{s.date.split('-').reverse().join('/')}</span>
+                <span className="mfs-mono mfs-dim">{s.time || '—'}</span>
+                <span>{s.description}</span>
+                <span className="mfs-col-right mfs-mono accent-green">{formatBRL(s.amount)}</span>
+                <button className="mfs-icon-btn danger" onClick={() => removeSale(s.id)} aria-label="Remover">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Compras (custos variáveis por categoria)                                */
+/* ---------------------------------------------------------------------- */
+
+function PurchasesView({ data, setData, month }) {
+  const [activeCat, setActiveCat] = useState(data.categories[0] || '');
+  const [newCat, setNewCat] = useState('');
+  const [showNewCat, setShowNewCat] = useState(false);
+  const [form, setForm] = useState({ product: '', quantity: '1', unitPrice: '', date: todayStr(), supplier: '' });
+  const [formError, setFormError] = useState('');
+  const [errorField, setErrorField] = useState('');
+  const [justAdded, setJustAdded] = useState(false);
+  const successTimer = useRef(null);
+  useEffect(() => () => clearTimeout(successTimer.current), []);
+
+  useEffect(() => {
+    if (data.categories.length && !data.categories.includes(activeCat)) {
+      setActiveCat(data.categories[0]);
+    }
+  }, [data.categories, activeCat]);
+
+  const catTotals = useMemo(() => {
+    const map = {};
+    data.categories.forEach((c) => (map[c] = 0));
+    data.purchases.forEach((p) => {
+      if (monthKeyOf(p.date) === month && map[p.category] !== undefined) {
+        map[p.category] += Number(p.total) || 0;
+      }
+    });
+    return map;
+  }, [data.purchases, data.categories, month]);
+
+  const rows = useMemo(
+    () =>
+      data.purchases
+        .filter((p) => p.category === activeCat && monthKeyOf(p.date) === month)
+        .sort((a, b) => (a.date < b.date ? 1 : -1)),
+    [data.purchases, activeCat, month]
+  );
+  const subtotal = rows.reduce((s, r) => s + (Number(r.total) || 0), 0);
+
+  const addCategory = () => {
+    const name = newCat.trim();
+    if (!name || data.categories.includes(name)) return;
+    setData((d) => ({ ...d, categories: [...d.categories, name] }));
+    setActiveCat(name);
+    setNewCat('');
+    setShowNewCat(false);
+  };
+
+  const previewQty = parseAmount(form.quantity) || 0;
+  const previewUnitPrice = parseAmount(form.unitPrice) || 0;
+
+  const addPurchase = () => {
+    if (!activeCat) {
+      setFormError('Crie ou selecione uma categoria antes de lançar.');
+      setErrorField('category');
+      return;
+    }
+    const qty = parseAmount(form.quantity) || 0;
+    const unitPrice = parseAmount(form.unitPrice) || 0;
+    if (!qty || qty <= 0) {
+      setFormError('Informe uma quantidade maior que zero.');
+      setErrorField('qty');
+      return;
+    }
+    if (!unitPrice || unitPrice <= 0) {
+      setFormError('Informe o preço unitário.');
+      setErrorField('unitPrice');
+      return;
+    }
+    setFormError('');
+    setErrorField('');
+    const total = Math.round(qty * unitPrice * 100) / 100;
+    setData((d) => ({
+      ...d,
+      purchases: [
+        ...d.purchases,
+        {
+          id: genId(),
+          category: activeCat,
+          product: form.product.trim() || 'Item sem nome',
+          quantity: qty,
+          unitPrice,
+          total,
+          date: form.date || todayStr(),
+          supplier: form.supplier.trim(),
+        },
+      ],
+    }));
+    setForm({ product: '', quantity: '1', unitPrice: '', date: form.date || todayStr(), supplier: '' });
+    setJustAdded(true);
+    clearTimeout(successTimer.current);
+    successTimer.current = setTimeout(() => setJustAdded(false), 1800);
+  };
+  const removePurchase = (id) => setData((d) => ({ ...d, purchases: d.purchases.filter((p) => p.id !== id) }));
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addPurchase();
+    }
+  };
+
+  return (
+    <div className="mfs-view">
+      <div className="mfs-chip-row">
+        {data.categories.map((c) => (
+          <button
+            key={c}
+            className={`mfs-chip ${c === activeCat ? 'active' : ''}`}
+            onClick={() => { setActiveCat(c); setFormError(''); setErrorField(''); }}
+          >
+            {c}
+            <span className="mfs-chip-total">{formatBRL(catTotals[c] || 0)}</span>
+          </button>
+        ))}
+        {showNewCat ? (
+          <span className="mfs-chip-new">
+            <input
+              autoFocus
+              className="mfs-input mfs-input-chip"
+              placeholder="Nova categoria"
+              value={newCat}
+              onChange={(e) => setNewCat(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addCategory()}
+            />
+            <button className="mfs-icon-btn" onClick={addCategory} aria-label="Confirmar categoria">
+              <Check size={14} />
+            </button>
+          </span>
+        ) : (
+          <button className="mfs-chip mfs-chip-add" onClick={() => setShowNewCat(true)}>
+            <Plus size={13} /> categoria
+          </button>
+        )}
+      </div>
+
+      <div className="mfs-panel">
+        <div className="mfs-panel-head">
+          <div>
+            <h3>Nova compra{activeCat ? ` — ${activeCat}` : ''}</h3>
+            <p className="mfs-panel-hint">Preencha produto, quantidade e preço unitário. O total é calculado sozinho.</p>
+          </div>
+        </div>
+        <div className="mfs-sale-form" onKeyDown={handleKeyDown}>
+          <div className="mfs-field mfs-field-grow">
+            <label htmlFor="p-product">Produto</label>
+            <input
+              id="p-product"
+              className="mfs-input"
+              placeholder="Ex: Cerveja long neck"
+              value={form.product}
+              onChange={(e) => setForm((f) => ({ ...f, product: e.target.value }))}
+            />
+          </div>
+          <div className="mfs-field mfs-field-qty">
+            <label htmlFor="p-qty">Qtd.</label>
+            <input
+              id="p-qty"
+              className={`mfs-input mfs-input-qty ${errorField === 'qty' ? 'mfs-input-error' : ''}`}
+              type="text"
+              inputMode="decimal"
+              placeholder="1"
+              value={form.quantity}
+              onChange={(e) => { setForm((f) => ({ ...f, quantity: e.target.value })); setFormError(''); setErrorField(''); }}
+            />
+          </div>
+          <div className="mfs-field mfs-field-amount">
+            <label htmlFor="p-price">Preço un.</label>
+            <div className={`mfs-amount-wrap ${errorField === 'unitPrice' ? 'mfs-input-error' : ''}`}>
+              <span>R$</span>
+              <input
+                id="p-price"
+                className="mfs-input mfs-input-amount"
+                type="text"
+                inputMode="decimal"
+                placeholder="0,00"
+                value={form.unitPrice}
+                onChange={(e) => { setForm((f) => ({ ...f, unitPrice: e.target.value })); setFormError(''); setErrorField(''); }}
+              />
+            </div>
+          </div>
+          <div className="mfs-field mfs-field-date">
+            <label htmlFor="p-date">Data</label>
+            <input
+              id="p-date"
+              className="mfs-input"
+              type="date"
+              value={form.date}
+              onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+            />
+          </div>
+          <div className="mfs-field mfs-field-grow">
+            <label htmlFor="p-supplier">Fornecedor</label>
+            <input
+              id="p-supplier"
+              className="mfs-input"
+              placeholder="Opcional"
+              value={form.supplier}
+              onChange={(e) => setForm((f) => ({ ...f, supplier: e.target.value }))}
+            />
+          </div>
+          <button type="button" className="mfs-btn-primary mfs-field-submit" onClick={addPurchase}>
+            <Plus size={14} /> Lançar
+          </button>
+        </div>
+        <p className="mfs-preview-total">
+          Total: <strong>{formatBRL(previewQty * previewUnitPrice)}</strong>
+        </p>
+        {formError && <p className="mfs-form-error">{formError}</p>}
+        {justAdded && !formError && (
+          <p className="mfs-form-success">
+            <Check size={13} /> Compra registrada
+          </p>
+        )}
+      </div>
+
+      <div className="mfs-panel">
+        <div className="mfs-panel-head">
+          <h3>Compras em {monthLabelFull(month)}</h3>
+          <span className="mfs-panel-total">{formatBRL(subtotal)}</span>
+        </div>
+        {rows.length === 0 ? (
+          <p className="mfs-empty-hint">Nenhuma compra nesta categoria, neste mês.</p>
+        ) : (
+          <div className="mfs-table mfs-table-purchases">
+            <div className="mfs-table-head">
+              <span>Data</span>
+              <span>Produto</span>
+              <span className="mfs-col-right">Qtd.</span>
+              <span className="mfs-col-right">Preço un.</span>
+              <span className="mfs-col-right">Total</span>
+              <span>Fornecedor</span>
+              <span />
+            </div>
+            {rows.map((p) => (
+              <div className="mfs-table-row" key={p.id}>
+                <span className="mfs-mono">{p.date.split('-').reverse().join('/')}</span>
+                <span>{p.product}</span>
+                <span className="mfs-col-right mfs-mono">{p.quantity}</span>
+                <span className="mfs-col-right mfs-mono">{formatBRL(p.unitPrice)}</span>
+                <span className="mfs-col-right mfs-mono">{formatBRL(p.total)}</span>
+                <span className="mfs-dim">{p.supplier || '—'}</span>
+                <button className="mfs-icon-btn danger" onClick={() => removePurchase(p.id)} aria-label="Remover">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Dashboard                                                               */
+/* ---------------------------------------------------------------------- */
+
+function DashboardView({ data, month }) {
+  const financials = useMemo(() => computeFinancials(data, month), [data, month]);
+  const { fixedTotal, employeeTotal, structuralTotal, purchasesTotal, salesTotal, lucro, isLucro } = financials;
+
+  const buckets = [
+    { label: 'Gastos Fixos', value: fixedTotal },
+    { label: 'Funcionários', value: employeeTotal },
+    { label: 'Estruturais', value: structuralTotal },
+    { label: 'Compras do mês', value: purchasesTotal },
+  ];
+  const maxBucket = Math.max(...buckets.map((b) => b.value), 1);
+
+  const trendData = useMemo(
+    () =>
+      lastNMonths(month, 6).map((mk) => {
+        const fm = computeFinancials(data, mk);
+        return { key: mk, mes: monthLabelShort(mk), Vendas: fm.salesTotal, Custos: fm.custosTotal };
+      }),
+    [data, month]
+  );
+
+  const recent = useMemo(() => {
+    const items = [
+      ...data.sales.map((s) => ({ id: s.id, date: s.date, label: s.description, value: s.amount, kind: 'venda' })),
+      ...data.purchases.map((p) => ({ id: p.id, date: p.date, label: `${p.category} · ${p.product}`, value: -p.total, kind: 'compra' })),
+    ];
+    return items.sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 6);
+  }, [data]);
+
+  return (
+    <div className="mfs-view">
+      <div className="mfs-dash-grid">
+        <div className={`mfs-receipt ${isLucro ? 'is-lucro' : 'is-prejuizo'}`}>
+          <div className="mfs-stamp">{isLucro ? 'LUCRO' : 'PREJUÍZO'}</div>
+          <p className="mfs-receipt-eyebrow">RESUMO DO MÊS</p>
+          <h2 className="mfs-receipt-month">{monthLabelFull(month)}</h2>
+
+          <div className="mfs-receipt-row">
+            <span className="label">Vendas</span>
+            <span className="fill" />
+            <span className="value">{formatBRL(salesTotal)}</span>
+          </div>
+          <div className="mfs-receipt-row">
+            <span className="label">Gastos Fixos</span>
+            <span className="fill" />
+            <span className="value">- {formatBRL(fixedTotal)}</span>
+          </div>
+          <div className="mfs-receipt-row">
+            <span className="label">Funcionários</span>
+            <span className="fill" />
+            <span className="value">- {formatBRL(employeeTotal)}</span>
+          </div>
+          <div className="mfs-receipt-row">
+            <span className="label">Estruturais</span>
+            <span className="fill" />
+            <span className="value">- {formatBRL(structuralTotal)}</span>
+          </div>
+          <div className="mfs-receipt-row">
+            <span className="label">Compras do mês</span>
+            <span className="fill" />
+            <span className="value">- {formatBRL(purchasesTotal)}</span>
+          </div>
+
+          <div className="mfs-receipt-divider" />
+
+          <div className="mfs-receipt-row mfs-receipt-total">
+            <span className="label">{isLucro ? 'LUCRO' : 'PREJUÍZO'}</span>
+            <span className="fill" />
+            <span className="value">{formatBRL(Math.abs(lucro))}</span>
+          </div>
+        </div>
+
+        <div className="mfs-dash-side">
+          <div className="mfs-panel">
+            <h3>Para onde vai o custo</h3>
+            <div className="mfs-buckets">
+              {buckets.map((b) => (
+                <div className="mfs-bucket" key={b.label}>
+                  <div className="mfs-bucket-label">
+                    <span>{b.label}</span>
+                    <span className="mfs-mono">{formatBRL(b.value)}</span>
+                  </div>
+                  <div className="mfs-bucket-track">
+                    <div className="mfs-bucket-fill" style={{ width: `${(b.value / maxBucket) * 100}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mfs-panel">
+            <h3>Vendas x custos — últimos 6 meses</h3>
+            <div style={{ width: '100%', height: 200 }}>
+              <ResponsiveContainer>
+                <BarChart data={trendData} barGap={4}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--mfs-border)" vertical={false} />
+                  <XAxis dataKey="mes" stroke="var(--mfs-text-dim)" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="var(--mfs-text-dim)" fontSize={11} tickLine={false} axisLine={false} width={40}
+                    tickFormatter={(v) => `${Math.round(v / 100) / 10}k`} />
+                  <Tooltip
+                    contentStyle={{ background: '#241E17', border: '1px solid #3A3024', borderRadius: 8, fontFamily: 'IBM Plex Mono, monospace', fontSize: 12 }}
+                    labelStyle={{ color: '#EDE3D0' }}
+                    formatter={(v) => formatBRL(v)}
+                  />
+                  <Bar dataKey="Vendas" fill="#4C7A4F" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="Custos" fill="#B5473A" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mfs-panel">
+        <h3>Últimos lançamentos</h3>
+        {recent.length === 0 ? (
+          <p className="mfs-empty-hint">Nenhum lançamento ainda. Comece registrando uma venda ou compra.</p>
+        ) : (
+          <div className="mfs-feed">
+            {recent.map((item) => (
+              <div className="mfs-feed-row" key={item.id}>
+                {item.value >= 0 ? <TrendingUp size={15} className="accent-green" /> : <TrendingDown size={15} className="accent-red" />}
+                <span className="mfs-mono mfs-dim">{item.date.split('-').reverse().join('/')}</span>
+                <span className="mfs-feed-label">{item.label}</span>
+                <span className={`mfs-col-right mfs-mono ${item.value >= 0 ? 'accent-green' : 'accent-red'}`}>
+                  {item.value >= 0 ? '+' : '-'} {formatBRL(Math.abs(item.value))}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Relatório gerencial (impressão / "Salvar como PDF")                     */
+/* ---------------------------------------------------------------------- */
+
+/** Rendered off-screen at all times; CSS makes it the only visible thing
+ *  when the browser print dialog opens, so "Salvar como PDF" captures a
+ *  clean report instead of the app chrome. */
+function PrintReport({ data, month }) {
+  const f = computeFinancials(data, month);
+  const generatedAt = new Date().toLocaleString('pt-BR');
+
+  return (
+    <div className="mfs-print-only">
+      <div className="mfs-print-header">
+        <h1>Bar do Unha</h1>
+        <p>Relatório Gerencial — {monthLabelFull(month)}</p>
+        <p className="mfs-print-meta">Gerado em {generatedAt}</p>
+      </div>
+
+      <table className="mfs-print-summary">
+        <tbody>
+          <tr><th>Vendas</th><td>{formatBRL(f.salesTotal)}</td></tr>
+          <tr><th>Gastos Fixos</th><td>- {formatBRL(f.fixedTotal)}</td></tr>
+          <tr><th>Funcionários</th><td>- {formatBRL(f.employeeTotal)}</td></tr>
+          <tr><th>Gastos Estruturais</th><td>- {formatBRL(f.structuralTotal)}</td></tr>
+          <tr><th>Compras do mês</th><td>- {formatBRL(f.purchasesTotal)}</td></tr>
+          <tr className="mfs-print-total-row">
+            <th>{f.isLucro ? 'Lucro do mês' : 'Prejuízo do mês'}</th>
+            <td>{formatBRL(Math.abs(f.lucro))}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Compras por categoria</h2>
+      <table className="mfs-print-table">
+        <thead><tr><th>Categoria</th><th>Total no mês</th></tr></thead>
+        <tbody>
+          {data.categories.map((c) => (
+            <tr key={c}><td>{c}</td><td>{formatBRL(f.catTotals[c] || 0)}</td></tr>
+          ))}
+        </tbody>
+      </table>
+
+      <h2>Gastos Fixos</h2>
+      <table className="mfs-print-table">
+        <thead><tr><th>Descrição</th><th>Valor</th></tr></thead>
+        <tbody>
+          {data.fixedCosts.map((i) => (<tr key={i.id}><td>{i.name}</td><td>{formatBRL(i.amount)}</td></tr>))}
+        </tbody>
+      </table>
+
+      <h2>Funcionários</h2>
+      <table className="mfs-print-table">
+        <thead><tr><th>Nome</th><th>Valor</th></tr></thead>
+        <tbody>
+          {data.employees.map((i) => (<tr key={i.id}><td>{i.name}</td><td>{formatBRL(i.amount)}</td></tr>))}
+        </tbody>
+      </table>
+
+      <h2>Gastos Estruturais</h2>
+      <table className="mfs-print-table">
+        <thead><tr><th>Descrição</th><th>Valor</th></tr></thead>
+        <tbody>
+          {data.structuralCosts.map((i) => (<tr key={i.id}><td>{i.name}</td><td>{formatBRL(i.amount)}</td></tr>))}
+        </tbody>
+      </table>
+
+      <h2>Vendas do mês ({f.salesMonth.length})</h2>
+      {f.salesMonth.length === 0 ? (
+        <p className="mfs-print-empty">Nenhuma venda lançada neste mês.</p>
+      ) : (
+        <table className="mfs-print-table">
+          <thead><tr><th>Data</th><th>Hora</th><th>Descrição</th><th>Valor</th></tr></thead>
+          <tbody>
+            {f.salesMonth.map((s) => (
+              <tr key={s.id}>
+                <td>{s.date.split('-').reverse().join('/')}</td>
+                <td>{s.time || '—'}</td>
+                <td>{s.description}</td>
+                <td>{formatBRL(s.amount)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      <h2>Compras lançadas no mês ({f.purchasesMonth.length})</h2>
+      {f.purchasesMonth.length === 0 ? (
+        <p className="mfs-print-empty">Nenhuma compra lançada neste mês.</p>
+      ) : (
+        <table className="mfs-print-table">
+          <thead>
+            <tr><th>Data</th><th>Categoria</th><th>Produto</th><th>Qtd.</th><th>Preço un.</th><th>Total</th><th>Fornecedor</th></tr>
+          </thead>
+          <tbody>
+            {f.purchasesMonth
+              .slice()
+              .sort((a, b) => (a.date < b.date ? 1 : -1))
+              .map((p) => (
+                <tr key={p.id}>
+                  <td>{p.date.split('-').reverse().join('/')}</td>
+                  <td>{p.category}</td>
+                  <td>{p.product}</td>
+                  <td>{p.quantity}</td>
+                  <td>{formatBRL(p.unitPrice)}</td>
+                  <td>{formatBRL(p.total)}</td>
+                  <td>{p.supplier || '—'}</td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* App                                                                     */
+/* ---------------------------------------------------------------------- */
+
+const TABS = [
+  { id: 'dashboard', label: 'Visão Geral', icon: LayoutDashboard },
+  { id: 'vendas', label: 'Vendas', icon: Receipt },
+  { id: 'fixos', label: 'Custos Fixos', icon: Wallet },
+  { id: 'compras', label: 'Compras', icon: ShoppingBasket },
+  { id: 'estruturais', label: 'Estruturais', icon: Building2 },
+];
+
+function App() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saveState, setSaveState] = useState('idle'); // idle | saving | saved
+  const [tab, setTab] = useState('dashboard');
+  const [month, setMonth] = useState(currentMonthKey());
+  const saveTimer = useRef(null);
+  const firstLoad = useRef(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await window.storage.get('bar-data', false);
+        setData(res && res.value ? JSON.parse(res.value) : buildDefaultData());
+      } catch (err) {
+        setData(buildDefaultData());
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (loading || !data) return;
+    if (firstLoad.current) {
+      firstLoad.current = false;
+      return;
+    }
+    setSaveState('saving');
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      try {
+        await window.storage.set('bar-data', JSON.stringify(data), false);
+        setSaveState('saved');
+      } catch (err) {
+        setSaveState('idle');
+      }
+    }, 500);
+    return () => clearTimeout(saveTimer.current);
+  }, [data, loading]);
+
+  const handleExportPDF = () => window.print();
+
+  const resetAll = () => {
+    if (!window.confirm('Isso vai apagar todos os lançamentos e voltar aos dados originais da planilha. Continuar?')) return;
+    const fresh = buildDefaultData();
+    setData(fresh);
+  };
+
+  if (loading || !data) {
+    return (
+      <div className="mfs-app mfs-loading">
+        <Loader2 className="mfs-spin" size={22} />
+        <span>Carregando controle financeiro…</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mfs-app">
+      <PrintReport data={data} month={month} />
+
+      <header className="mfs-header">
+        <div>
+          <p className="mfs-eyebrow">Controle Financeiro</p>
+          <h1 className="mfs-title">Bar do Unha</h1>
+        </div>
+        <div className="mfs-header-controls">
+          <TodaySalesWidget sales={data.sales} variant="compact" />
+          <span className={`mfs-save-indicator ${saveState}`}>
+            {saveState === 'saving' ? 'salvando…' : saveState === 'saved' ? 'salvo' : ''}
+          </span>
+          <div className="mfs-month-nav">
+            <button className="mfs-icon-btn" onClick={() => setMonth((m) => shiftMonth(m, -1))} aria-label="Mês anterior">‹</button>
+            <input
+              className="mfs-month-input"
+              type="month"
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+            />
+            <button className="mfs-icon-btn" onClick={() => setMonth((m) => shiftMonth(m, 1))} aria-label="Próximo mês">›</button>
+          </div>
+          <button className="mfs-btn-ghost mfs-btn-print" onClick={handleExportPDF} title="Exportar relatório do mês em PDF">
+            <Printer size={14} /> Exportar PDF
+          </button>
+          <button className="mfs-icon-btn" onClick={resetAll} title="Restaurar dados originais da planilha" aria-label="Restaurar dados">
+            <RotateCcw size={15} />
+          </button>
+        </div>
+      </header>
+
+      <nav className="mfs-tabs">
+        {TABS.map((t) => {
+          const Icon = t.icon;
+          return (
+            <button key={t.id} className={`mfs-tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>
+              <Icon size={15} /> {t.label}
+            </button>
+          );
+        })}
+      </nav>
+
+      <main className="mfs-main">
+        {tab === 'dashboard' && <DashboardView data={data} month={month} />}
+        {tab === 'vendas' && <SalesView data={data} setData={setData} month={month} />}
+        {tab === 'fixos' && (
+          <div className="mfs-view">
+            <EditableList
+              title="Gastos Fixos"
+              hint="Despesas recorrentes de casa/família contabilizadas no custo do bar."
+              items={data.fixedCosts}
+              onChange={(items) => setData((d) => ({ ...d, fixedCosts: items }))}
+              addLabel="Adicionar gasto fixo"
+            />
+            <EditableList
+              title="Funcionários"
+              hint="Folha de pagamento mensal da equipe."
+              items={data.employees}
+              onChange={(items) => setData((d) => ({ ...d, employees: items }))}
+              addLabel="Adicionar funcionário"
+            />
+          </div>
+        )}
+        {tab === 'compras' && <PurchasesView data={data} setData={setData} month={month} />}
+        {tab === 'estruturais' && (
+          <div className="mfs-view">
+            <EditableList
+              title="Gastos Estruturais"
+              hint="Custos fixos de manter o bar funcionando: telefone, luz, água, contador."
+              items={data.structuralCosts}
+              onChange={(items) => setData((d) => ({ ...d, structuralCosts: items }))}
+              addLabel="Adicionar gasto estrutural"
+            />
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Styles                                                                   */
+/* ---------------------------------------------------------------------- */
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+
+</script>
+</body>
+</html>
